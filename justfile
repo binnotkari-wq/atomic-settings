@@ -64,7 +64,17 @@ _confirm recipe:
 bazzite_desktop-logon:
     ./scripts/bazzite_desktop-logon.sh
 
+# Compresse en zstd les données déployées en post-install par Bazzite (la compression n'étant pas active à ce stade)
+[group('Bazzite')]
+bazzite_compress:
+    ./scripts/bazzite_compress.sh
+    
 # --- Silverblue ---
+
+# Chargement du module NTSYNC au démarrage.
+[group('Silverblue')]
+load-ntsync:
+    ./scripts/silverblue_load_ntsync.sh
 
 # Installe des logiciel par rpm ostree (logiciels demandant une integration systeme).
 [group('Silverblue')]
@@ -83,7 +93,7 @@ vega_plymouth-fix:
 # Applique un karg pour la compression btrfs.
 [group('Toute distribution Atomic')]
 btrfs-kargs:
-    ./scripts/atomic_btrfs-kargs.sh
+    ./scripts/btrfs-kargs.sh
 
 # Mise à jour des firmwares.
 [group('Toute distribution Atomic')]
@@ -94,11 +104,6 @@ firmwares-update:
 [group('Toute distribution Atomic')]
 log_limit:
     ./scripts/log_limit.sh
-
-# Chargement du module NTSYNC au démarrage.
-[group('Toute distribution Atomic')]
-load-ntsync:
-    ./scripts/load-ntsync.sh
 
 # Paramétrage de la ZRAM.
 [group('Toute distribution Atomic')]
@@ -132,6 +137,8 @@ all_atomic:
 [group('workflows')]
 bazzite_only:
     just _confirm bazzite_desktop-logon
+    ##### créer scripts post install (cf le fichier texte post install.txt)
+    just _confirm bazzite_compress
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot
@@ -140,6 +147,8 @@ bazzite_only:
 [group('workflows')]
 silverblue_only:
     just _confirm silverblue_rpmostree-packages
+    just _confirm vega_plymouth-fix
+    just _confirm silverblue_remove_fedora_flatpaks.sh
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot

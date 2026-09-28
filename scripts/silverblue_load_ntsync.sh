@@ -2,6 +2,7 @@
 
 # NTSYNC : module kernel, gère nativement les primitives de synchronisation de
 # Windows (mutex, sémaphores, événements) au niveau du système.
+# Script nécessaire uniquement pour Silverblue : le chargement de ce module est prévu par défaut dans Bazzite.
 
 set -euo pipefail
 

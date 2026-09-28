@@ -28,16 +28,9 @@ done
 if ((${#TO_INSTALL[@]})); then
     sudo rpm-ostree cancel 2>/dev/null || true
     sudo rpm-ostree install --idempotent "${TO_INSTALL[@]}"
-    REBOOT_NEEDED=1
     echo "✅ Paquets système installés avec succès."
 fi
 
 # Réactivation des mises à jour automatiques rpm-ostree.
 sudo systemctl enable --now rpm-ostreed-automatic.timer 2>/dev/null || true
 echo "Mises à jour automatiques réactivées."
-
-# Redémarrage du système.
-echo "Un redémarrage est nécessaire (layering rpm-ostree et/ou karg appliqués au prochain déploiement)."
-echo "Redémarrage dans 10 secondes (Ctrl+C pour annuler)..."
-sleep 10
-sudo systemctl reboot

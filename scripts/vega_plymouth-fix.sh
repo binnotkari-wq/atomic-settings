@@ -35,15 +35,14 @@ echo "Mises à jour automatiques stoppées le temps du script."
 # Intégration à l'initramfs
 echo "==> Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
 
-local DRACUT_CONF="/etc/dracut.conf.d/amdgpu-early.conf"
-local PLYMOUTH_CONF="/etc/plymouth/plymouthd.conf"
-local besoin_regen=0
+DRACUT_CONF="/etc/dracut.conf.d/amdgpu-early.conf"
+PLYMOUTH_CONF="/etc/plymouth/plymouthd.conf"
+
 
 # Fichier dracut : force le chargement précoce du driver amdgpu dans l'initramfs
 if ! sudo grep -qE 'force_drivers\+?=.*amdgpu' "${DRACUT_CONF}" 2>/dev/null; then
     backup_fichier "${DRACUT_CONF}" sudo
     echo 'force_drivers+=" amdgpu "' | sudo tee "${DRACUT_CONF}" >/dev/null
-    besoin_regen=1
     echo "  ↳ ${DRACUT_CONF} créé/mis à jour."
 else
     echo "  ↳ ${DRACUT_CONF} déjà en place."
@@ -61,7 +60,7 @@ cat <<'EOF' | sudo tee "${PLYMOUTH_CONF}" >/dev/null
 Theme=bgrt
 UseSimpledrm=1
 EOF
-    besoin_regen=1
+
     echo "  ↳ ${PLYMOUTH_CONF} créé/mis à jour."
 else
     echo "  ↳ ${PLYMOUTH_CONF} déjà en place."
@@ -81,7 +80,6 @@ sudo rpm-ostree cancel 2>/dev/null || true
 sudo rpm-ostree initramfs --enable \
     --arg=-I --arg="${DRACUT_CONF}" \
     --arg=-I --arg="${PLYMOUTH_CONF}"
-REBOOT_NEEDED=1
 echo "✅ Correctif Plymouth/amdgpu appliqué (nouveau déploiement, reboot nécessaire)."
 echo "  ↳ Vérification post-reboot : lsinitrd -f etc/plymouth/plymouthd.conf /boot/ostree/*/initramfs-\$(uname -r).img"
 
@@ -89,9 +87,3 @@ echo "  ↳ Vérification post-reboot : lsinitrd -f etc/plymouth/plymouthd.conf 
 # Réactivation des mises à jour automatiques rpm-ostree.
 sudo systemctl enable --now rpm-ostreed-automatic.timer 2>/dev/null || true
 echo "Mises à jour automatiques réactivées."
-
-# Redémarrage du système.
-echo "Un redémarrage est nécessaire (layering rpm-ostree et/ou karg appliqués au prochain déploiement)."
-echo "Redémarrage dans 10 secondes (Ctrl+C pour annuler)..."
-sleep 10
-sudo systemctl reboot
