@@ -1,21 +1,26 @@
 #!/usr/bin/env bash
 
-# Script d'injection des fichiers de configuration desktop, et application des préférences. Idempotent.
-
 set -euo pipefail
 
+echo "==> Injection des fichiers de configuration desktop, et application des préférences."
+
 # Sauvegarde un fichier existant en .backup avant modification.
-# Le .backup est écrasé à chaque run (pas d'historique, juste un filet de sécurité
-# avant la prochaine écriture)
-sauvegarder_fichier () {
-    local fichier="$1" avec_sudo="${2:-non}"
-    if [[ "$avec_sudo" == "oui" ]]; then
-        if sudo test -f "$fichier"; then
-            sudo cp -f "$fichier" "${fichier}.backup"
+backup_fichier () {
+    local fichier="$1"
+    local besoin_sudo="${2:-}"
+
+    local backup="${fichier}.backup"
+
+    if [[ "$besoin_sudo" == "sudo" ]]; then
+        # Ne faire le backup que si le backup n'existe pas déjà
+        if sudo test -f "$fichier" && ! sudo test -f "$backup"; then
+            sudo cp -a "$fichier" "$backup"
+            echo "  ↳ Backup créé : ${backup}"
         fi
     else
-        if [[ -f "$fichier" ]]; then
-            cp -f "$fichier" "${fichier}.backup"
+        if [[ -f "$fichier" ]] && [[ ! -f "$backup" ]]; then
+            cp -a "$fichier" "$backup"
+            echo "  ↳ Backup créé : ${backup}"
         fi
     fi
 }
@@ -25,7 +30,7 @@ sauvegarder_fichier () {
 # relancer, le fichier est simplement re-synchronisé avec la source.
 telecharger_fichier () {
     local dest="$1" src="$2" perms="$3" avec_sudo="${4:-non}"
-    sauvegarder_fichier "$dest" "$avec_sudo"
+    backup_fichier "$dest" "$avec_sudo"
     if [[ "$avec_sudo" == "oui" ]]; then
         sudo curl -fsSL "$src" -o "$dest"
         sudo chmod "$perms" "$dest"
@@ -35,7 +40,6 @@ telecharger_fichier () {
     fi
 }
 
-echo "==> Mise en place des préférences desktop."
 sudo mkdir -p /var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies
 sudo mkdir -p /etc/firefox/policies
 sudo mkdir -p /etc/profile.d
@@ -45,8 +49,8 @@ sudo mkdir -p /etc/dconf/db/local.d
 sudo mkdir -p /etc/dconf/profile
 mkdir -p "$HOME/Modèles"
 
-# A vérifier : chemin relatif par rapport au script, ou au justfile ?
-url="../system_files"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+url="${SCRIPT_DIR}/../system_files"
 
 telecharger_fichier "/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json" "$url/etc/firefox/policies/policies.json" 644 oui
 telecharger_fichier "/etc/firefox/policies/policies.json"      "$url/etc/firefox/policies/policies.json"      644 oui
@@ -63,4 +67,4 @@ sudo dconf update
 # Ajouter les extragroups
 # - user : extraGroups = [ "libvirtd" "kvm" ];
 
-echo "✅ Préférences mises en place avec succès."
+echo "✅ Configuration desktop et préférences mises en place avec succès."

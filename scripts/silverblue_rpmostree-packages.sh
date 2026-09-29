@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-# Installe des paquets rpm par rpm ostree. Nécessaire pour ces
-# paquets qui doivent êtr eintégré au système de base.
-
 set -euo pipefail
+
+echo "==> Installation par rpm ostree des paquets qui doivent être intégré au système de base"
+
+if command -v gamescope &>/dev/null; then
+    echo "paquets déjà présent, rien à faire."
+    exit 0
+fi
 
 # Arrêt des mises à jour automatiques rpm-ostree pour la durée du script.
 sudo rpm-ostree cancel 2>/dev/null || true
@@ -28,9 +32,11 @@ done
 if ((${#TO_INSTALL[@]})); then
     sudo rpm-ostree cancel 2>/dev/null || true
     sudo rpm-ostree install --idempotent "${TO_INSTALL[@]}"
-    echo "✅ Paquets système installés avec succès."
+    echo "Déploiement OSTREE terminé."
 fi
 
 # Réactivation des mises à jour automatiques rpm-ostree.
 sudo systemctl enable --now rpm-ostreed-automatic.timer 2>/dev/null || true
 echo "Mises à jour automatiques réactivées."
+
+echo "✅ Paquets système installés avec succès."

@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
-# Karg : compression btrfs zstd:1 (composefs ne prenant pas en compte l'intégralité
-# de /etc/fstab - valade pour toutes les Fedora Atomic et autres dérivés bootc).
-# https://gitlab.com/fedora/ostree/sig/-/work_items/72
-
 set -euo pipefail
+
+echo "==> Mise en place de la compression BTRFS (zstd:1) en KARG"
+echo "==> composefs ne prenant pas en compte l'intégralité de /etc/fstab"
+echo "==> https://gitlab.com/fedora/ostree/sig/-/work_items/72"
+
+if rpm-ostree kargs | grep -q 'compress=zstd'; then
+    echo "compress=zstd déjà présent dans les kargs, rien à faire."
+    exit 0
+fi
 
 # Arrêt des mises à jour automatiques rpm-ostree pour la durée du script.
 sudo rpm-ostree cancel 2>/dev/null || true
@@ -27,3 +32,5 @@ echo "La compression peut être vérifiée en comparant l'espace avant/après cr
 echo "sudo compsize /var/home/benoit"
 echo "dd if=/dev/zero of=myfs.img bs=1024 count=1024000"
 echo "sudo compsize /var/home/benoit"
+
+echo "✅ KARG de compression BTRFS mis en place avec succès."

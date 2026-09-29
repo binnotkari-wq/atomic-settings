@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 
-# Services et applications dont le démarrage aitomatique sera désactivé.
-# Liste générale : certains seront zbsent de Fedora ou de Bazzite.
-# Leur absence ne provoquera pas d'erreur d'éxecution du script ou du système.
-
 set -oue pipefail
 
-echo "==> Désactivation des services et démarrages automatiques"
+echo "==> Désactivation des services et démarrages automatiques."
 
 # Services système : désactivation
 sudo systemctl disable \
@@ -66,10 +62,11 @@ apps=(
 mkdir -p ~/.config/autostart
 
 for app in "${apps[@]}"; do
-    backup_fichier ~/.config/autostart/"$app"
     echo "[Desktop Entry]
 Type=Application
 Name=$app
 Exec=/bin/true
 Hidden=true" > ~/.config/autostart/"$app"
 done
+
+echo "✅ Services et démarrages automatiques désactivés avec succès."

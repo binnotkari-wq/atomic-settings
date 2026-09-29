@@ -57,23 +57,11 @@ _confirm recipe:
         just {{recipe}}
     fi
 
-# --- Bazzite ---
-
-# Active le logon sur le bureau au lieu de la session gamescope par défaut.
-[group('Bazzite')]
-bazzite_desktop-logon:
-    ./scripts/bazzite_desktop-logon.sh
-
-# Compresse en zstd les données déployées en post-install par Bazzite (la compression n'étant pas active à ce stade)
-[group('Bazzite')]
-bazzite_compress:
-    ./scripts/bazzite_compress.sh
-    
 # --- Silverblue ---
 
 # Chargement du module NTSYNC au démarrage.
 [group('Silverblue')]
-load-ntsync:
+silverblue_load_ntsync:
     ./scripts/silverblue_load_ntsync.sh
 
 # Installe des logiciel par rpm ostree (logiciels demandant une integration systeme).
@@ -81,12 +69,14 @@ load-ntsync:
 silverblue_rpmostree-packages:
     ./scripts/silverblue_rpmostree-packages.sh
 
-# --- Radeon Vega ---
-
 # Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8).
-[group('Radeon Vega')]
-vega_plymouth-fix:
-    ./scripts/vega_plymouth-fix.sh
+[group('Silverblue')]
+silverblue_vega_plymouth-fix:
+    ./scripts/silverblue_vega_plymouth-fix.sh
+
+[group('Silverblue')]
+silverblue_vm-settings:
+    ./scripts/silverblue_vm-settings.sh
 
 # --- Toute distribution Atomic ---
 
@@ -95,50 +85,58 @@ vega_plymouth-fix:
 btrfs-kargs:
     ./scripts/btrfs-kargs.sh
 
+# Applique les préférences desktop Gnome.
+[group('Toute distribution Atomic')]
+desktop_preferences:
+    ./scripts/desktop_preferences.sh
+
+# Desactivation des services et démarrages automatiques.
+[group('Toute distribution Atomic')]
+disable_startups:
+    ./scripts/disable_startups.sh
+
+# Compresse en zstd les données déployées en post-install par Bazzite (la compression n'étant pas active à ce stade)
+[group('Toute distribution Atomic')]
+existing-files_compress:
+    ./scripts/existing-files_compress.sh
+
 # Mise à jour des firmwares.
 [group('Toute distribution Atomic')]
 firmwares-update:
     ./scripts/firmwares-update.sh
 
-# Limite de l'espace disque occupé par les journaux.
+# Mise en place des repos Github personnels (demande des credentials pour le repo privé).
+[group('Toute distribution Atomic')]
+github_setup:
+    ./scripts/github_setup.sh
+
+# Limitation de l'espace disque alloué aux journaux système (100 Mo).
 [group('Toute distribution Atomic')]
 log_limit:
     ./scripts/log_limit.sh
+
+# Application des alias shell.
+[group('Toute distribution Atomic')]
+shell_alias:
+    ./scripts/shell_alias.sh
 
 # Paramétrage de la ZRAM.
 [group('Toute distribution Atomic')]
 zram-setting:
     ./scripts/zram-setting.sh
 
-# Paramétrage de la memoire virtuelle.
-[group('Toute distribution Atomic')]
-vm-setting:
-    ./scripts/vm-setting.sh
-    
-# Desactivation des services et démarrages automatiques.
-[group('Toute distribution Atomic')]
-startup_disable:
-    ./scripts/startup_disable.sh
-
-
 # Applique l'ensemble des réglages communs à toute distribution type Fedora Atomic. Opération idempotente. Aucune connection réseau nécessaire.
 [group('workflows')]
 all_atomic:
     just _confirm btrfs-kargs
+    just _confirm desktop_preferences
+    just _confirm disable_startups
+    just _confirm existing-files_compress
+    just _confirm firmware-update
+    just _confirm github_setup
     just _confirm log_limit
-    just _confirm startup_disable
-    just _confirm 
-    just _confirm 
-    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
-    sleep 10
-    sudo systemctl reboot
-
-# Applique l'ensemble des réglages spécifiques à Bazzite. Opération idempotente. Aucune connection réseau nécessaire.
-[group('workflows')]
-bazzite_only:
-    just _confirm bazzite_desktop-logon
-    ##### créer scripts post install (cf le fichier texte post install.txt)
-    just _confirm bazzite_compress
+    just _confirm shell_alias
+    just _confirm zram-settings
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot
@@ -146,9 +144,11 @@ bazzite_only:
 # Applique l'ensemble des réglages spécifiques à Silverblue. Opération idempotente. Connection réseau nécessaire.
 [group('workflows')]
 silverblue_only:
+    just _confirm silverblue_load_ntsync
+    @echo "Une connection réseau est nécessaire pour cette étape (installation de paquets)."
     just _confirm silverblue_rpmostree-packages
-    just _confirm vega_plymouth-fix
-    just _confirm silverblue_remove_fedora_flatpaks.sh
+    just _confirm silverblue_vega_plymouth-fix
+    just _confirm silverblue_vm-settings
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot

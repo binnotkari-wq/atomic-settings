@@ -1,26 +1,34 @@
 #!/usr/bin/env bash
 
-# Corrige un bug apparu sur les GPU AMD intégrés de la famille Vega (ex: Picasso/Vega 8,
-# présent sur le Dell 5485) suite à une mise à jour majeure de kernel : le splash graphique
-# Plymouth (thème bgrt) ne s'affiche plus au prompt LUKS, remplacé par une invite texte.
-
 set -euo pipefail
 
-backup_fichier () {
-  local fichier="$1"
-  local besoin_sudo="${2:-}"
+echo "==> Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
+echo "==> Suite à mise à jour de Silverblue 44 vers Kernel 7.x, l'invite graphique"
+echo "==> de saisie du mot de passe LUKS ne s'affichait plus."
 
-  if [[ "$besoin_sudo" == "sudo" ]]; then
-    if sudo test -f "$fichier"; then
-      sudo cp -a "$fichier" "${fichier}.backup"
-      echo "  ↳ Backup créé : ${fichier}.backup"
+if sudo lsinitrd | grep -q 'amdgpu'; then
+    echo "amdgpu déjà présent dans l'initramfs, rien à faire."
+    exit 0
+fi
+
+backup_fichier () {
+    local fichier="$1"
+    local besoin_sudo="${2:-}"
+
+    local backup="${fichier}.backup"
+
+    if [[ "$besoin_sudo" == "sudo" ]]; then
+        # Ne faire le backup que si le backup n'existe pas déjà
+        if sudo test -f "$fichier" && ! sudo test -f "$backup"; then
+            sudo cp -a "$fichier" "$backup"
+            echo "  ↳ Backup créé : ${backup}"
+        fi
+    else
+        if [[ -f "$fichier" ]] && [[ ! -f "$backup" ]]; then
+            cp -a "$fichier" "$backup"
+            echo "  ↳ Backup créé : ${backup}"
+        fi
     fi
-  else
-    if [[ -f "$fichier" ]]; then
-      cp -a "$fichier" "${fichier}.backup"
-      echo "  ↳ Backup créé : ${fichier}.backup"
-    fi
-  fi
 }
 
 # Arrêt des mises à jour automatiques rpm-ostree pour la durée du script.
@@ -33,8 +41,6 @@ pkill -x gnome-software 2>/dev/null || true
 echo "Mises à jour automatiques stoppées le temps du script."
 
 # Intégration à l'initramfs
-echo "==> Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
-
 DRACUT_CONF="/etc/dracut.conf.d/amdgpu-early.conf"
 PLYMOUTH_CONF="/etc/plymouth/plymouthd.conf"
 
@@ -80,10 +86,10 @@ sudo rpm-ostree cancel 2>/dev/null || true
 sudo rpm-ostree initramfs --enable \
     --arg=-I --arg="${DRACUT_CONF}" \
     --arg=-I --arg="${PLYMOUTH_CONF}"
-echo "✅ Correctif Plymouth/amdgpu appliqué (nouveau déploiement, reboot nécessaire)."
-echo "  ↳ Vérification post-reboot : lsinitrd -f etc/plymouth/plymouthd.conf /boot/ostree/*/initramfs-\$(uname -r).img"
-
+echo "initramfs régénéré."
 
 # Réactivation des mises à jour automatiques rpm-ostree.
 sudo systemctl enable --now rpm-ostreed-automatic.timer 2>/dev/null || true
 echo "Mises à jour automatiques réactivées."
+
+echo "✅ Correctif Plymouth/amdgpu appliqué (nouveau déploiement, reboot nécessaire)."
