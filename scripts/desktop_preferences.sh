@@ -7,12 +7,11 @@ echo "==> Injection des fichiers de configuration desktop, et application des pr
 # Sauvegarde un fichier existant en .backup avant modification.
 backup_fichier () {
     local fichier="$1"
-    local besoin_sudo="${2:-}"
+    local avec_sudo="${2:-non}"
 
     local backup="${fichier}.backup"
 
-    if [[ "$besoin_sudo" == "sudo" ]]; then
-        # Ne faire le backup que si le backup n'existe pas déjà
+    if [[ "$avec_sudo" == "oui" ]]; then
         if sudo test -f "$fichier" && ! sudo test -f "$backup"; then
             sudo cp -a "$fichier" "$backup"
             echo "  ↳ Backup créé : ${backup}"
@@ -25,17 +24,24 @@ backup_fichier () {
     fi
 }
 
-# Télécharge un fichier depuis $src vers $dest, sauvegarde l'ancienne version si
+# Copie un fichier depuis $src vers $dest, sauvegarde l'ancienne version si
 # présente, applique les permissions demandées. Idempotent par nature : on peut
 # relancer, le fichier est simplement re-synchronisé avec la source.
-telecharger_fichier () {
+copier_fichier () {
     local dest="$1" src="$2" perms="$3" avec_sudo="${4:-non}"
+
+    if [[ ! -f "$src" ]]; then
+        echo "  ✗ Fichier source introuvable : $src" >&2
+        return 1
+    fi
+
     backup_fichier "$dest" "$avec_sudo"
+
     if [[ "$avec_sudo" == "oui" ]]; then
-        sudo curl -fsSL "$src" -o "$dest"
+        sudo cp -f "$src" "$dest"
         sudo chmod "$perms" "$dest"
     else
-        curl -fsSL "$src" -o "$dest"
+        cp -f "$src" "$dest"
         chmod "$perms" "$dest"
     fi
 }
@@ -50,18 +56,19 @@ sudo mkdir -p /etc/dconf/profile
 mkdir -p "$HOME/Modèles"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-url="${SCRIPT_DIR}/../system_files"
+src="${SCRIPT_DIR}/../system_files"
 
-telecharger_fichier "/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json" "$url/etc/firefox/policies/policies.json" 644 oui
-telecharger_fichier "/etc/firefox/policies/policies.json"      "$url/etc/firefox/policies/policies.json"      644 oui
-telecharger_fichier "/etc/profile.d/10-environment.sh"         "$url/etc/profile.d/10-environment.sh"         644 oui
-telecharger_fichier "/etc/dconf/db/local.d/00-defaults"        "$url/etc/dconf/db/local.d/00-defaults"        644 oui
-telecharger_fichier "/etc/dconf/profile/user"                  "$url/etc/dconf/profile/user"                  644 oui
-telecharger_fichier "$HOME/Modèles/Fichier Markdown.md"        "$url/etc/skel/Modèles/Fichier%20Markdown.md"  644 non
-telecharger_fichier "$HOME/Modèles/Fichier texte.txt"          "$url/etc/skel/Modèles/Fichier%20texte.txt"    644 non
-telecharger_fichier "$HOME/Modèles/Script.sh"                  "$url/etc/skel/Modèles/Script.sh"              755 non
+copier_fichier "/var/lib/flatpak/extension/org.mozilla.firefox.systemconfig/x86_64/stable/policies/policies.json" \
+               "$src/etc/firefox/policies/policies.json"             644 oui
+copier_fichier "/etc/firefox/policies/policies.json"      "$src/etc/firefox/policies/policies.json"      644 oui
+copier_fichier "/etc/profile.d/10-environment.sh"         "$src/etc/profile.d/10-environment.sh"         644 oui
+copier_fichier "/etc/dconf/db/local.d/00-defaults"        "$src/etc/dconf/db/local.d/00-defaults"        644 oui
+copier_fichier "/etc/dconf/profile/user"                  "$src/etc/dconf/profile/user"                  644 oui
+copier_fichier "$HOME/Modèles/Fichier Markdown.md"        "$src/etc/skel/Modèles/Fichier Markdown.md"    644 non
+copier_fichier "$HOME/Modèles/Fichier texte.txt"          "$src/etc/skel/Modèles/Fichier texte.txt"      644 non
+copier_fichier "$HOME/Modèles/Script.sh"                  "$src/etc/skel/Modèles/Script.sh"              755 non
 
-# activation des préférences dconf injectées
+# Activation des préférences dconf injectées
 sudo dconf update
 
 # Ajouter les extragroups

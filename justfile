@@ -131,7 +131,7 @@ all_atomic:
     just _confirm desktop_preferences
     just _confirm disable_startups
     just _confirm existing-files_compress
-    just _confirm firmware-update
+    just _confirm firmwares-update
     just _confirm github_setup
     just _confirm load_ntsync
     just _confirm log_limit
