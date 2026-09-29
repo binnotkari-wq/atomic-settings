@@ -5,9 +5,17 @@ set -euo pipefail
 echo "==> Intégration Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
 echo "==> pour invite graphique de saisie du mot de passe LUKS."
 
-if sudo lsinitrd | grep -q 'amdgpu'; then
-    echo "amdgpu déjà présent dans l'initramfs, rien à faire."
-    exit 0
+INITRAMFS=$(sudo ls -t /boot/ostree/*/initramfs-*.img 2>/dev/null | head -1)
+
+if [[ -n "$INITRAMFS" ]]; then
+    TMPOUT=$(mktemp)
+    sudo lsinitrd "$INITRAMFS" 2>/dev/null > "$TMPOUT"
+    if grep -q 'amdgpu' "$TMPOUT"; then
+        rm -f "$TMPOUT"
+        echo "amdgpu déjà présent dans l'initramfs, rien à faire."
+        exit 0
+    fi
+    rm -f "$TMPOUT"
 fi
 
 backup_fichier () {

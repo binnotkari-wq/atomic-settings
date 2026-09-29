@@ -121,8 +121,8 @@ vm-settings:
 
 # Paramétrage de la ZRAM.
 [group('Toute distribution Atomic')]
-zram-setting:
-    ./scripts/zram-setting.sh
+zram-settings:
+    ./scripts/zram-settings.sh
 
 # Applique l'ensemble des réglages communs à toute distribution type Fedora Atomic. Opérations idempotentes.
 [group('workflows')]
