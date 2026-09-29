@@ -57,27 +57,6 @@ _confirm recipe:
         just {{recipe}}
     fi
 
-# --- Silverblue ---
-
-# Chargement du module NTSYNC au démarrage.
-[group('Silverblue')]
-silverblue_load_ntsync:
-    ./scripts/silverblue_load_ntsync.sh
-
-# Installe des logiciel par rpm ostree (logiciels demandant une integration systeme).
-[group('Silverblue')]
-silverblue_rpmostree-packages:
-    ./scripts/silverblue_rpmostree-packages.sh
-
-# Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8).
-[group('Silverblue')]
-silverblue_vega_plymouth-fix:
-    ./scripts/silverblue_vega_plymouth-fix.sh
-
-[group('Silverblue')]
-silverblue_vm-settings:
-    ./scripts/silverblue_vm-settings.sh
-
 # --- Toute distribution Atomic ---
 
 # Applique un karg pour la compression btrfs.
@@ -110,22 +89,42 @@ firmwares-update:
 github_setup:
     ./scripts/github_setup.sh
 
+# Chargement du module NTSYNC au démarrage.
+[group('Toute distribution Atomic')]
+load_ntsync:
+    ./scripts/load_ntsync.sh
+
 # Limitation de l'espace disque alloué aux journaux système (100 Mo).
 [group('Toute distribution Atomic')]
 log_limit:
     ./scripts/log_limit.sh
+
+# Installe des logiciel par rpm ostree (logiciels demandant une integration systeme).
+[group('Toute distribution Atomic')]
+rpmostree-packages:
+    ./scripts/rpmostree-packages.sh
 
 # Application des alias shell.
 [group('Toute distribution Atomic')]
 shell_alias:
     ./scripts/shell_alias.sh
 
+# Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8).
+[group('Toute distribution Atomic')]
+vega_plymouth-fix:
+    ./scripts/vega_plymouth-fix.sh
+
+# Paramétrage de la mémoire virtuelle.
+[group('Toute distribution Atomic')]
+vm-settings:
+    ./scripts/vm-settings.sh
+
 # Paramétrage de la ZRAM.
 [group('Toute distribution Atomic')]
 zram-setting:
     ./scripts/zram-setting.sh
 
-# Applique l'ensemble des réglages communs à toute distribution type Fedora Atomic. Opération idempotente. Aucune connection réseau nécessaire.
+# Applique l'ensemble des réglages communs à toute distribution type Fedora Atomic. Opérations idempotentes.
 [group('workflows')]
 all_atomic:
     just _confirm btrfs-kargs
@@ -134,21 +133,14 @@ all_atomic:
     just _confirm existing-files_compress
     just _confirm firmware-update
     just _confirm github_setup
+    just _confirm load_ntsync
     just _confirm log_limit
-    just _confirm shell_alias
-    just _confirm zram-settings
-    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
-    sleep 10
-    sudo systemctl reboot
-
-# Applique l'ensemble des réglages spécifiques à Silverblue. Opération idempotente. Connection réseau nécessaire.
-[group('workflows')]
-silverblue_only:
-    just _confirm silverblue_load_ntsync
     @echo "Une connection réseau est nécessaire pour cette étape (installation de paquets)."
-    just _confirm silverblue_rpmostree-packages
-    just _confirm silverblue_vega_plymouth-fix
-    just _confirm silverblue_vm-settings
+    just _confirm rpmostree-packages
+    just _confirm shell_alias
+    just _confirm vega_plymouth-fix
+    just _confirm vm-settings
+    just _confirm zram-settings
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
     sleep 10
     sudo systemctl reboot

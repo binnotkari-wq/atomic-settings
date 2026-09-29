@@ -2,9 +2,8 @@
 
 set -euo pipefail
 
-echo "==> Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
-echo "==> Suite à mise à jour de Silverblue 44 vers Kernel 7.x, l'invite graphique"
-echo "==> de saisie du mot de passe LUKS ne s'affichait plus."
+echo "==> Intégration Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8)"
+echo "==> pour invite graphique de saisie du mot de passe LUKS."
 
 if sudo lsinitrd | grep -q 'amdgpu'; then
     echo "amdgpu déjà présent dans l'initramfs, rien à faire."
