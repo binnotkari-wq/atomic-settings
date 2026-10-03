@@ -138,6 +138,7 @@ all_atomic:
     @echo "Une connection réseau est nécessaire pour cette étape (installation de paquets)."
     just _confirm rpmostree-packages
     just _confirm shell_alias
+    @echo "Appliquer uniquement lorsque l'affichage graphique de saisie LUKS est KO :"
     just _confirm vega_plymouth-fix
     just _confirm vm-settings
     just _confirm zram-settings
