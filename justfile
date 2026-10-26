@@ -57,89 +57,127 @@ _confirm recipe:
         just {{recipe}}
     fi
 
-# --- Toute distribution Atomic ---
+
+# --- Paramétrages Ubuntu ---
+
+# Installation outils de base
+[group('Ubuntu')]
+base_tools:
+    sudo apt install just git distrobox curl compsize
+
+# Suppression Snaps
+[group('Ubuntu')]
+delete_snaps:
+    sudo ./delete_snaps.sh
+
+# Déplacement /home et /var vers partition btrfs
+[group('Ubuntu')]
+migrate_home_var:
+    sudo ./migrate_home_var.sh
+
+
+# --- Paramétrages Fedora Atomic et dérivés ---
 
 # Applique un karg pour la compression btrfs.
-[group('Toute distribution Atomic')]
+[group('Fedora Atomic')]
 btrfs-kargs:
     ./scripts/btrfs-kargs.sh
 
-# Applique les préférences desktop Gnome.
-[group('Toute distribution Atomic')]
-desktop_preferences:
-    ./scripts/desktop_preferences.sh
-
-# Desactivation des services et démarrages automatiques.
-[group('Toute distribution Atomic')]
-disable_startups:
-    ./scripts/disable_startups.sh
-
 # Compresse en zstd les données déployées en post-install par Bazzite (la compression n'étant pas active à ce stade)
-[group('Toute distribution Atomic')]
+[group('Fedora Atomic')]
 existing-files_compress:
     ./scripts/existing-files_compress.sh
 
-# Mise à jour des firmwares.
-[group('Toute distribution Atomic')]
-firmwares-update:
-    ./scripts/firmwares-update.sh
-
-# Mise en place des repos Github personnels (demande des credentials pour le repo privé).
-[group('Toute distribution Atomic')]
-github_setup:
-    ./scripts/github_setup.sh
-
-# Chargement du module NTSYNC au démarrage.
-[group('Toute distribution Atomic')]
-load_ntsync:
-    ./scripts/load_ntsync.sh
-
-# Limitation de l'espace disque alloué aux journaux système (100 Mo).
-[group('Toute distribution Atomic')]
-log_limit:
-    ./scripts/log_limit.sh
-
 # Installe des logiciel par rpm ostree (logiciels demandant une integration systeme).
-[group('Toute distribution Atomic')]
+[group('Fedora Atomic')]
 rpmostree-packages:
     ./scripts/rpmostree-packages.sh
 
-# Application des alias shell.
-[group('Toute distribution Atomic')]
-shell_alias:
-    ./scripts/shell_alias.sh
-
 # Correctif Plymouth/amdgpu (GPU AMD Vega intégré, ex: Picasso/Vega 8).
-[group('Toute distribution Atomic')]
+[group('Fedora Atomic')]
 vega_plymouth-fix:
     ./scripts/vega_plymouth-fix.sh
 
+# --- Paramétrages communs ---
+
+# Mise à jour des firmwares.
+[group('Communs')]
+firmwares-update:
+    ./scripts/firmwares-update.sh
+
+# Applique les préférences desktop Gnome.
+[group('Communs')]
+desktop_preferences:
+    ./scripts/desktop_preferences.sh
+
+# Application des alias shell.
+[group('Communs')]
+shell_alias:
+    ./scripts/shell_alias.sh
+
+# Mise en place des repos Github personnels (demande des credentials pour le repo privé).
+[group('Communs')]
+github_setup:
+    ./scripts/github_setup.sh
+
+# Limitation de l'espace disque alloué aux journaux système (100 Mo).
+[group('Communs')]
+log_limit:
+    ./scripts/log_limit.sh
+
+# Desactivation des services et démarrages automatiques.
+[group('Communs')]
+disable_startups:
+    ./scripts/disable_startups.sh
+
+# Chargement du module NTSYNC au démarrage.
+[group('Communs')]
+load_ntsync:
+    ./scripts/load_ntsync.sh
+
 # Paramétrage de la mémoire virtuelle.
-[group('Toute distribution Atomic')]
+[group('Communs')]
 vm-settings:
     ./scripts/vm-settings.sh
 
 # Paramétrage de la ZRAM.
-[group('Toute distribution Atomic')]
+[group('Communs')]
 zram-settings:
-    ./scripts/zram-settings.sh
+    sudo ./scripts/zram-settings.sh
 
-# Applique l'ensemble des réglages communs à toute distribution type Fedora Atomic. Opérations idempotentes.
+# Applique l'ensemble des réglages spécifiques aux distribution type Atomic. Opérations idempotentes.
 [group('workflows')]
-all_atomic:
-    just _confirm btrfs-kargs
-    just _confirm desktop_preferences
-    just _confirm disable_startups
+atomic:
     just _confirm existing-files_compress
-    just _confirm firmwares-update
-    just _confirm github_setup
-    just _confirm load_ntsync
-    just _confirm log_limit
+    just _confirm btrfs-kargs
     @echo "Une connection réseau est nécessaire pour cette étape (installation de paquets)."
     just _confirm rpmostree-packages
-    just _confirm shell_alias
     @echo "Appliquer uniquement lorsque l'affichage graphique de saisie LUKS est KO :"
     just _confirm vega_plymouth-fix
+    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
+    sleep 10
+    sudo systemctl reboot
+
+# Applique l'ensemble des réglages spécifiques à Ubuntu. Opérations idempotentes.
+[group('workflows')]
+ubuntu:
+    just _confirm base_tools
+    just _confirm delete_snaps
+    just _confirm migrate_home_var
+    @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."
+    sleep 10
+    sudo systemctl reboot
+
+# Applique l'ensemble des réglages communs. Opérations idempotentes.
+[group('workflows')]
+communs:
+    just _confirm firmwares-update
+    just _confirm desktop_preferences
+    just _confirm shell_alias
+    just _confirm github_setup
+    just _confirm log_limit
+    just _confirm disable_startups
+    just _confirm load_ntsync
     just _confirm vm-settings
     just _confirm zram-settings
     @echo "Réglages appliqués. Redémarrage dans 10 secondes (Ctrl+C pour annuler).."

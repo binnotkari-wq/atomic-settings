@@ -56,19 +56,10 @@ keybindings='default'
 style-variant='follow'
 draw-spaces=['space', 'tab', 'newline', 'trailing', 'leading']
 
-
-[org/gnome/Ptyxis]
-default-profile-uuid='4e1019f9ba4276ad9c62d05b6a727dd1'
-font-name='Adwaita Mono 11'
-profile-uuids=['4e1019f9ba4276ad9c62d05b6a727dd1']
-use-system-font=false
-window-size=(uint32 135, uint32 35)
-
 [org/gnome/Ptyxis/Profiles/4e1019f9ba4276ad9c62d05b6a727dd1]
 palette='Gruvbox'
 bold-is-bright=true
 opacity=0.80
-
 
 [org/gnome/shell]
 favorite-apps=['kitty.desktop', 'org.mozilla.firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Calculator.desktop', 'net.nokyan.Resources.desktop', 'org.gnome.SystemMonitor.desktop']
